@@ -189,8 +189,9 @@ function generateQRCode() {
 
         // 設置Canvas尺寸 - 增加外框大小
         const frameSize = pixelSize;
-        const canvasWidth = (moduleCount * pixelSize) + (frameSize * 2);
-        const canvasHeight = (moduleCount * pixelSize) + (frameSize * 2);
+        // 計算實際像素尺寸，考慮 DPR
+        const canvasWidth = ((moduleCount * pixelSize) + (frameSize * 2));
+        const canvasHeight = ((moduleCount * pixelSize) + (frameSize * 2));
 
         // 設置QR碼選項
         const options = {
@@ -211,7 +212,7 @@ function generateQRCode() {
 
         // 創建Canvas元素
         const canvas = document.createElement('canvas');
-        // 考慮 DPR 設置 Canvas 尺寸
+        // 設置 Canvas 的實際像素尺寸
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
         // 設置 Canvas 的 CSS 尺寸以保持物理大小一致
@@ -219,8 +220,6 @@ function generateQRCode() {
         canvas.style.height = (canvasHeight / deviceDPR) + 'px';
 
         const ctx = canvas.getContext('2d');
-        // 根據 DPR 調整繪圖比例
-        ctx.scale(1, 1);
 
         // 填充整個Canvas為背景色（包括外框）
         ctx.fillStyle = background;
@@ -260,14 +259,13 @@ function generateQRCode() {
             overlayBrailleOnQRCode({
                 width: canvasWidth,
                 height: canvasHeight,
-                widthCm: canvasWidth / (dpi / 2.54),
-                heightCm: canvasHeight / (dpi / 2.54),
+                widthCm: (canvasWidth / deviceDPR) / (dpi / 2.54),
+                heightCm: (canvasHeight / deviceDPR) / (dpi / 2.54),
                 deviceDPR: deviceDPR
             }, moduleCount, pixelSize);
         });
 
         // 計算並顯示物理尺寸，考慮 DPR
-        // 使用 DPI 和 DPR 計算實際物理尺寸
         const widthCm = (canvasWidth / deviceDPR) / (dpi / 2.54);
         const heightCm = (canvasHeight / deviceDPR) / (dpi / 2.54);
 
@@ -387,14 +385,25 @@ function overlayBrailleOnQRCode(qrSize, moduleCount, pixelSize) {
     // 創建SVG元素
     const svgNS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(svgNS, "svg");
+
+    // 設置 SVG 的實際像素尺寸
     svg.setAttribute("width", qrSize.width);
     svg.setAttribute("height", qrSize.height);
+
+    // 設置 SVG 的 CSS 尺寸
+    svg.style.width = (qrSize.width / deviceDPR) + 'px';
+    svg.style.height = (qrSize.height / deviceDPR) + 'px';
+
+    // 設置 SVG 的位置
     svg.style.position = "absolute";
     svg.style.top = "0";
     svg.style.left = "0";
-    // 考慮 DPR 設置 SVG 的 CSS 尺寸
-    svg.style.width = (qrSize.width / deviceDPR) + 'px';
-    svg.style.height = (qrSize.height / deviceDPR) + 'px';
+
+    // 添加 viewBox 屬性以確保 SVG 內容正確縮放
+    svg.setAttribute("viewBox", `0 0 ${qrSize.width} ${qrSize.height}`);
+
+    // 添加 preserveAspectRatio 屬性以確保 SVG 內容不變形
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     // 1. 檢查左上與左下定位點之間的距離，判斷是否可以輸出至少一行盲文
     const verticalSpaceBetweenFinders = leftBottomFinderStartY - initialStartY;
@@ -675,6 +684,7 @@ function downloadCombinedOutput() {
         downloadCanvas(canvas, 'qrcode.png');
     }
 }
+
 
 
 /**
